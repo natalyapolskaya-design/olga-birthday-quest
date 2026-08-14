@@ -175,6 +175,72 @@ function addFullscreenBridge(html){
   return html.includes('</body>')?html.replace('</body>',bridge+'</body>'):html+bridge;
 }
 
+function addSceneLayoutFixes(html,index){
+  const fixes={
+    /* Кабинет: разводим три активные кнопки и сохраняем нижнюю подсказку. */
+    3:`
+      .hint{
+        left:2.5%!important;right:auto!important;bottom:2.2%!important;
+        transform:none!important;max-width:34%!important;white-space:normal!important;
+        text-align:center!important;padding:7px 12px!important;font-size:13px!important;
+        line-height:1.2!important;
+      }
+      .radio-button{
+        left:75.5%!important;top:auto!important;bottom:15%!important;
+        padding:7px 13px!important;font-size:13px!important;line-height:1.15!important;
+      }
+      .bell-button{
+        left:auto!important;right:2.3%!important;top:auto!important;bottom:4.5%!important;
+        transform:none!important;min-width:0!important;max-width:255px!important;
+        padding:7px 12px!important;font-size:13px!important;line-height:1.15!important;
+      }
+      .ruby-button{
+        left:50%!important;bottom:2.2%!important;padding:7px 13px!important;
+        font-size:13px!important;line-height:1.15!important;
+      }
+      .radio-status{top:auto!important;bottom:21%!important}
+      .bell-status{top:auto!important;bottom:12%!important}
+    `,
+    /* Переход после кабинета: весь рассказ помещается над кнопкой. */
+    4:`
+      .caption{
+        left:7%!important;top:6%!important;width:44vw!important;max-width:44vw!important;
+      }
+      .caption .line{margin-bottom:7px!important}
+      .caption .main{font-size:38px!important;line-height:1.03!important}
+      .caption .sub{font-size:17px!important;line-height:1.28!important}
+      .servantText{
+        left:7%!important;top:7%!important;width:44vw!important;max-width:44vw!important;
+      }
+      .servantText .small{font-size:17px!important;line-height:1.28!important}
+      .servantText .quote{margin-top:9px!important;font-size:33px!important;line-height:1.07!important}
+      .continue{
+        bottom:3%!important;padding:8px 18px!important;font-size:15px!important;
+        line-height:1.15!important;
+      }
+    `,
+    /* Результат викторины: финальная кнопка всегда остаётся в кадре. */
+    5:`
+      .final-card{
+        top:4.5%!important;width:52vw!important;max-width:760px!important;
+      }
+      .final-small{font-size:12px!important;margin-bottom:6px!important;line-height:1.15!important}
+      .final-title{font-size:42px!important;line-height:1.02!important}
+      .final-rule{margin:9px 0 11px!important}
+      .final-text{font-size:17px!important;line-height:1.28!important}
+      .final-verdict{margin-top:10px!important;font-size:29px!important;line-height:1.08!important}
+      .final-btn{margin-top:11px!important;padding:8px 18px!important;font-size:14px!important}
+      .qpanel{top:5%!important}
+      .answers{bottom:7%!important}
+      .next-btn{right:3%!important;bottom:2.5%!important}
+    `
+  };
+  const css=fixes[index];
+  if(!css) return html;
+  const style=`<style id="olga-phone-layout-fix">${css}</style>`;
+  return html.includes('</head>')?html.replace('</head>',style+'</head>'):style+html;
+}
+
 
 
 function hideContinue(){continueBtn.classList.remove('show')}
@@ -197,7 +263,8 @@ async function loadScene(index,{withCurtain=true}={}){
   try{
     const response=await fetch(sceneFiles[index],{cache:'no-store'});
     if(!response.ok) throw new Error(`Scene load failed: ${response.status}`);
-    const html=addFullscreenBridge(await response.text());
+    const source=await response.text();
+    const html=addFullscreenBridge(addSceneLayoutFixes(source,index));
     const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
     const previousUrl=activeUrl;
     stage.onload=()=>{
