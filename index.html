@@ -115,12 +115,13 @@ let sceneReady=false;
 let activeUrl='';
 let changing=false;
 let started=false;
+const nativeMode=new URLSearchParams(window.location.search).get('native')==='appclip';
 
 function isAppleMobile(){
   return /iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 }
 function isStandalone(){
-  return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+  return nativeMode||window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 }
 
 function updateEntryGate(portrait){
@@ -148,11 +149,21 @@ function fitStage(){
   const height=viewport?viewport.height:window.innerHeight;
   const portrait=height>width;
   const ratio=sceneRatios[current]||16/9;
-  const fittedWidth=Math.min(width,height*ratio);
-  const fittedHeight=fittedWidth/ratio;
+  /*
+    Сцены всегда рендерятся на стабильном большом холсте, а затем целиком
+    уменьшаются до доступной области телефона. Так фон, текст и кнопки
+    масштабируются вместе и ничего не уходит за нижнюю границу Safari.
+  */
+  const designWidth=1536;
+  const designHeight=designWidth/ratio;
+  const scale=Math.min(width/designWidth,height/designHeight);
+  const fittedWidth=designWidth*scale;
+  const fittedHeight=designHeight*scale;
   const sideSpace=Math.max(0,(width-fittedWidth)/2);
-  stage.style.width=Math.round(fittedWidth)+'px';
-  stage.style.height=Math.round(fittedHeight)+'px';
+  stage.style.width=Math.round(designWidth)+'px';
+  stage.style.height=Math.round(designHeight)+'px';
+  stage.style.transform=`translate(-50%,-50%) scale(${scale})`;
+  stage.style.transformOrigin='50% 50%';
   card.style.setProperty('--side-space',Math.round(sideSpace)+'px');
   card.classList.toggle('letterbox',!portrait&&sideSpace>=112);
   card.classList.toggle('portrait',portrait);
