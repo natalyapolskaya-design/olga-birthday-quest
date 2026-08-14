@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="olga-build" content="buttons-audio-v7-2026-08-14">
+<meta name="olga-build" content="audio-transitions-bell-v8-2026-08-14">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,9 +21,9 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--dark)}
 body{font-family:Georgia,"Times New Roman",serif}
 .card{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden;background:#080402;isolation:isolate}
-.stage{position:absolute;left:50%;top:50%;width:100%;height:100%;transform:translate(-50%,-50%);border:0;background:#080402;opacity:1;transition:opacity .72s ease}
+.stage{position:absolute;left:50%;top:50%;width:100%;height:100%;transform:translate(-50%,-50%);border:0;background:#080402;opacity:1;transition:opacity .22s ease}
 .stage.changing{opacity:0}
-.curtain{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,rgba(48,25,12,.1),rgba(7,3,2,.96));opacity:0;transition:opacity .7s ease}
+.curtain{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,rgba(48,25,12,.12),rgba(7,3,2,.92));opacity:0;transition:opacity .22s ease}
 .curtain.on{opacity:1}
 .continue{position:absolute;z-index:8;left:50%;bottom:max(19px,3.2vh);transform:translateX(-50%) translateY(13px);min-width:270px;min-height:58px;padding:14px 28px;border:1px solid rgba(218,181,108,.8);border-radius:999px;background:linear-gradient(rgba(58,32,17,.94),rgba(20,10,6,.96));color:#efd6a5;font:italic 20px Georgia,"Times New Roman",serif;box-shadow:0 13px 32px rgba(0,0,0,.56),inset 0 1px rgba(255,255,255,.08);cursor:pointer;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .5s ease,visibility .5s ease,transform .5s ease,background .25s ease;backdrop-filter:blur(7px)}
 .continue.show{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(-50%) translateY(0)}
@@ -119,6 +119,7 @@ let sceneReady=false;
 let activeUrl='';
 let changing=false;
 let started=false;
+const sceneSourceCache=new Map();
 const nativeMode=new URLSearchParams(window.location.search).get('native')==='appclip';
 
 function isAppleMobile(){
@@ -221,8 +222,19 @@ function addSceneLayoutFixes(html,index){
         left:18%!important;bottom:2.2%!important;min-width:180px!important;min-height:64px!important;
         padding:12px 20px!important;font-size:21px!important;line-height:1.15!important;
       }
-      .radio-status{top:auto!important;bottom:21%!important}
-      .bell-status{top:auto!important;bottom:12%!important}
+      .radio-status{
+        left:auto!important;right:16%!important;top:auto!important;bottom:25%!important;
+        transform:none!important;padding:8px 14px!important;border-radius:999px!important;
+        background:rgba(18,10,6,.82)!important;font-size:20px!important;line-height:1.15!important;
+      }
+      .bell-status{
+        left:auto!important;right:2.3%!important;top:auto!important;bottom:14.5%!important;
+        transform:none!important;min-width:300px!important;max-width:330px!important;
+        padding:10px 16px!important;border:1px solid rgba(204,160,91,.58)!important;
+        border-radius:999px!important;background:rgba(18,10,6,.9)!important;
+        font-size:22px!important;line-height:1.15!important;text-align:center!important;
+        white-space:normal!important;z-index:60!important;
+      }
     `,
     /* Переход после кабинета: весь рассказ помещается над кнопкой. */
     4:`
@@ -290,54 +302,21 @@ function addSceneLayoutFixes(html,index){
 
 function addSceneAudioFixes(html,index){
   if(index!==2) return html;
-
   /*
-    В сцене прибытия исходное ржание заметно тише топота. Оно начинается
-    ещё и после преждевременного затухания копыт, поэтому на телефоне
-    воспринимается как обрыв. Делаем естественный звуковой нахлёст:
-    копыта затихают плавно, а усиленное ржание начинается чуть раньше.
+    iPhone может запретить запуск второго Audio по отложенному таймеру.
+    Поэтому топот и отчётливое ржание сведены в один готовый трек,
+    который запускается непосредственно первым касанием пользователя.
   */
-  html=html
+  const arrivalUrl=new URL('horse-arrival-complete.mp3?olga=v8',location.href).href;
+  const oldWhinny="setTimeout(async()=>{try{snort.currentTime=0;snort.volume=.72;await snort.play();setTimeout(()=>fadeOut(snort,1300),3400)}catch(e){console.warn('Snort audio:',e)}},12100);";
+  return html
     .replace(
-      'gallop.volume=.72; snort.volume=.72; doorAudio.volume=.82;',
-      'gallop.volume=.82; snort.volume=1; doorAudio.volume=.82;'
+      /const gallop=new Audio\('data:audio\/mpeg;base64,[^']+'\);/,
+      `const gallop=new Audio(${JSON.stringify(arrivalUrl)});`
     )
-    .replace('setTimeout(()=>fadeOut(gallop,1500),10800);','setTimeout(()=>fadeOut(gallop,2800),10400);')
-    .replace('setTimeout(()=>fadeOut(snort,1300),3400)','setTimeout(()=>fadeOut(snort,1300),4800)')
-    .replace('},12100);','},9400);')
-    .replace("setTimeout(()=>scene.classList.add('ready'),14800);","setTimeout(()=>scene.classList.add('ready'),15600);");
-
-  const boost=`<script>(()=>{
-    let prepared=false;
-    const prepareHorseSound=()=>{
-      if(prepared) return;
-      prepared=true;
-      try{
-        const AudioContextCtor=window.AudioContext||window.webkitAudioContext;
-        if(!AudioContextCtor||typeof snort==='undefined') return;
-        const context=new AudioContextCtor();
-        const source=context.createMediaElementSource(snort);
-        const gain=context.createGain();
-        const limiter=context.createDynamicsCompressor();
-        gain.gain.value=2.2;
-        limiter.threshold.value=-7;
-        limiter.knee.value=10;
-        limiter.ratio.value=7;
-        limiter.attack.value=.003;
-        limiter.release.value=.24;
-        source.connect(gain).connect(limiter).connect(context.destination);
-        context.resume().catch(()=>{});
-        window.__olgaHorseAudio={context,source,gain,limiter};
-      }catch(error){console.warn('Horse sound boost:',error)}
-    };
-    const start=document.getElementById('start');
-    if(start){
-      start.addEventListener('pointerdown',prepareHorseSound,{capture:true,once:true});
-      start.addEventListener('touchend',prepareHorseSound,{capture:true,once:true});
-      start.addEventListener('click',prepareHorseSound,{capture:true,once:true});
-    }
-  })();<\/script>`;
-  return html.includes('</body>')?html.replace('</body>',boost+'</body>'):html+boost;
+    .replace('gallop.volume=.72; snort.volume=.72; doorAudio.volume=.82;','gallop.volume=.92; snort.volume=0; doorAudio.volume=.82;')
+    .replace('setTimeout(()=>fadeOut(gallop,1500),10800);','')
+    .replace(oldWhinny,'');
 }
 
 
@@ -350,22 +329,41 @@ function showContinue(label='Продолжить историю →'){
 function stopCurrentScene(){
   if(stage.contentWindow) stage.contentWindow.postMessage({type:'olga-stop-media'},'*');
 }
+async function getSceneSource(index){
+  if(!sceneSourceCache.has(index)){
+    const request=fetch(sceneFiles[index],{cache:'force-cache'}).then(response=>{
+      if(!response.ok) throw new Error(`Scene load failed: ${response.status}`);
+      return response.text();
+    });
+    sceneSourceCache.set(index,request);
+  }
+  try{
+    return await sceneSourceCache.get(index);
+  }catch(error){
+    sceneSourceCache.delete(index);
+    throw error;
+  }
+}
+function preloadNextScene(index){
+  if(index<0||index>=sceneFiles.length||sceneSourceCache.has(index)) return;
+  getSceneSource(index).catch(()=>{});
+}
 async function loadScene(index,{withCurtain=true}={}){
   if(changing||index<0||index>=sceneFiles.length) return;
   changing=true;
   sceneReady=false;
   hideContinue();
   restartBtn.classList.remove('show');
-  if(withCurtain){curtain.classList.add('on');stage.classList.add('changing')}
   stopCurrentScene();
   loading.classList.add('show');
   try{
-    const response=await fetch(sceneFiles[index],{cache:'no-store'});
-    if(!response.ok) throw new Error(`Scene load failed: ${response.status}`);
-    const source=await response.text();
+    /* Пока следующая тяжёлая сцена загружается, предыдущий кадр остаётся видимым. */
+    const source=await getSceneSource(index);
+    sceneSourceCache.delete(index);
     const html=addFullscreenBridge(addSceneAudioFixes(addSceneLayoutFixes(source,index),index));
     const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
     const previousUrl=activeUrl;
+    if(withCurtain){curtain.classList.add('on');stage.classList.add('changing')}
     stage.onload=()=>{
       current=index;
       fitStage();
@@ -376,6 +374,7 @@ async function loadScene(index,{withCurtain=true}={}){
       stage.classList.remove('changing');
       changing=false;
       sceneReady=true;
+      preloadNextScene(index+1);
       if(index===0){
         entryGate.classList.remove('hidden');
         started=false;
