@@ -1,0 +1,19 @@
+{
+  "name": "Один день госпожи Ольги",
+  "short_name": "История Ольги",
+  "description": "Персональная поздравительная история для Ольги",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#080402",
+  "theme_color": "#080402",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
