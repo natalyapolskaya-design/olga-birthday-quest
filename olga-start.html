@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Один день госпожи Ольги — поздравительная открытка</title>
+<style>
+:root{color-scheme:dark;--gold:#d7b56f;--dark:#080402}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--dark)}
+body{font-family:Georgia,"Times New Roman",serif}
+.card{position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden;background:#080402;isolation:isolate}
+.stage{position:absolute;inset:0;width:100%;height:100%;border:0;background:#080402;opacity:1;transition:opacity .72s ease}
+.stage.changing{opacity:0}
+.curtain{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,rgba(48,25,12,.1),rgba(7,3,2,.96));opacity:0;transition:opacity .7s ease}
+.curtain.on{opacity:1}
+.continue{position:absolute;z-index:8;left:50%;bottom:max(19px,3.2vh);transform:translateX(-50%) translateY(13px);min-width:235px;padding:12px 25px;border:1px solid rgba(218,181,108,.8);border-radius:999px;background:linear-gradient(rgba(58,32,17,.94),rgba(20,10,6,.96));color:#efd6a5;font:italic 17px Georgia,"Times New Roman",serif;box-shadow:0 13px 32px rgba(0,0,0,.56),inset 0 1px rgba(255,255,255,.08);cursor:pointer;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .5s ease,visibility .5s ease,transform .5s ease,background .25s ease;backdrop-filter:blur(7px)}
+.continue.show{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+.continue:hover,.continue:focus-visible{background:linear-gradient(#704425,#30180d);outline:1px solid rgba(240,204,137,.52);outline-offset:4px}
+.progress{position:absolute;z-index:9;left:0;bottom:0;width:100%;height:3px;background:rgba(13,7,4,.65);pointer-events:none}
+.progress i{display:block;width:12.5%;height:100%;background:linear-gradient(90deg,#875329,#ddb96d,#8e562d);box-shadow:0 0 8px rgba(225,184,102,.4);transition:width .75s ease}
+.loading{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:#080402;color:#d3b477;font:italic 16px Georgia,serif;letter-spacing:.08em;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .3s ease,visibility .3s ease}
+.loading.show{opacity:1;visibility:visible}
+.loading span::after{content:"";animation:dots 1.2s steps(4,end) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%,100%{content:"..."}}
+.restart{position:absolute;z-index:30;left:max(13px,1.8vw);top:max(13px,2vh);padding:8px 14px;border:1px solid rgba(214,178,108,.5);border-radius:999px;background:rgba(15,8,5,.66);color:#e4c78f;font:italic 14px Georgia,serif;cursor:pointer;opacity:0;visibility:hidden;pointer-events:none;transition:.45s ease;backdrop-filter:blur(8px)}
+.restart.show{opacity:.86;visibility:visible;pointer-events:auto}
+.restart:hover,.restart:focus-visible{opacity:1;outline:1px solid rgba(232,197,132,.5);outline-offset:3px}
+.error{position:absolute;inset:0;z-index:50;display:none;place-items:center;padding:28px;background:#080402;color:#e9cf9d;text-align:center;font:18px/1.5 Georgia,serif}
+.error.show{display:grid}
+@media(max-width:680px){.continue{bottom:17px;min-width:210px;padding:10px 20px;font-size:15px}.progress{height:2px}.restart{font-size:12px;padding:7px 11px}}
+@media(prefers-reduced-motion:reduce){.stage,.curtain,.continue,.progress i,.loading,.restart{transition-duration:.01ms!important}.loading span::after{animation:none}}
+.loading{display:none!important}
+</style>
+</head>
+<body>
+<main class="card" aria-label="Поздравительная открытка для Ольги">
+  <iframe class="stage" id="stage" title="Сцена поздравительной открытки" allow="autoplay; fullscreen" sandbox="allow-scripts allow-same-origin"></iframe>
+  <div class="curtain" id="curtain"></div>
+  <button class="continue" id="continueBtn" type="button">Продолжить историю →</button>
+  <button class="restart" id="restartBtn" type="button">↺ С самого начала</button>
+  <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+  <div class="loading" id="loading" aria-hidden="true"></div>
+  <div class="error" id="error">Не удалось открыть сцену. Пожалуйста, перезагрузите открытку.</div>
+</main>
+
+<script>
+const sceneFiles=["scene-01.html","scene-02.html","scene-03.html","scene-04.html","scene-05.html","scene-06.html","scene-07.html","scene-08.html"];
+const stage=document.getElementById('stage');
+const curtain=document.getElementById('curtain');
+const continueBtn=document.getElementById('continueBtn');
+const restartBtn=document.getElementById('restartBtn');
+const progressBar=document.getElementById('progressBar');
+const loading=document.getElementById('loading');
+const errorBox=document.getElementById('error');
+let current=0;
+let sceneReady=false;
+let activeUrl='';
+let changing=false;
+
+
+
+function hideContinue(){continueBtn.classList.remove('show')}
+function showContinue(label='Продолжить историю →'){
+  continueBtn.textContent=label;
+  continueBtn.classList.add('show');
+}
+function stopCurrentScene(){
+  if(stage.contentWindow) stage.contentWindow.postMessage({type:'olga-stop-media'},'*');
+}
+async function loadScene(index,{withCurtain=true}={}){
+  if(changing||index<0||index>=sceneFiles.length) return;
+  changing=true;
+  sceneReady=false;
+  hideContinue();
+  restartBtn.classList.remove('show');
+  if(withCurtain){curtain.classList.add('on');stage.classList.add('changing')}
+  stopCurrentScene();
+  loading.classList.add('show');
+  try{
+    const response=await fetch(sceneFiles[index],{cache:'no-store'});
+    if(!response.ok) throw new Error(`Scene load failed: ${response.status}`);
+    const html=await response.text();
+    const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+    const previousUrl=activeUrl;
+    stage.onload=()=>{
+      current=index;
+      activeUrl=url;
+      progressBar.style.width=((current+1)/sceneFiles.length*100)+'%';
+      loading.classList.remove('show');
+      curtain.classList.remove('on');
+      stage.classList.remove('changing');
+      changing=false;
+      sceneReady=true;
+      if(previousUrl) URL.revokeObjectURL(previousUrl);
+    };
+    stage.src=url;
+  }catch(error){
+    console.error(error);
+    changing=false;
+    loading.classList.remove('show');
+    errorBox.classList.add('show');
+  }
+}
+
+window.addEventListener('message',event=>{
+  if(event.source!==stage.contentWindow||!event.data) return;
+  if(event.data.type==='olga-scene-complete'&&sceneReady){
+    if(current<sceneFiles.length-1) showContinue(event.data.label||'Продолжить историю →');
+  }
+  if(event.data.type==='olga-scene-advance'&&sceneReady&&current<sceneFiles.length-1){
+    loadScene(current+1);
+  }
+  if(event.data.type==='olga-card-finished') restartBtn.classList.add('show');
+});
+continueBtn.addEventListener('click',()=>loadScene(current+1));
+restartBtn.addEventListener('click',()=>loadScene(0));
+window.addEventListener('beforeunload',()=>{stopCurrentScene();if(activeUrl)URL.revokeObjectURL(activeUrl)});
+loadScene(0,{withCurtain:false});
+</script>
+</body>
+</html>
