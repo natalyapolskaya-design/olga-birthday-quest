@@ -37,6 +37,13 @@ body{font-family:Georgia,"Times New Roman",serif}
 .restart:hover,.restart:focus-visible{opacity:1;outline:1px solid rgba(232,197,132,.5);outline-offset:3px}
 .error{position:absolute;inset:0;z-index:50;display:none;place-items:center;padding:28px;background:#080402;color:#e9cf9d;text-align:center;font:18px/1.5 Georgia,serif}
 .error.show{display:grid}
+.entry{position:absolute;inset:0;z-index:60;display:grid;place-items:center;background:radial-gradient(circle at 50% 48%,#23130b 0%,#080402 58%,#050302 100%);opacity:1;visibility:visible;transition:opacity .8s ease,visibility .8s ease}
+.entry.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.entry-card{margin:20px;padding:28px 34px;text-align:center;border:1px solid rgba(231,196,125,.5);border-radius:20px;background:rgba(18,10,6,.78);box-shadow:0 18px 60px rgba(0,0,0,.45),inset 0 0 30px rgba(183,122,48,.06);color:#e7c47d}
+.entry-title{font-size:clamp(24px,3vw,42px);font-style:italic;margin-bottom:18px}
+.entry-button{font:inherit;font-size:clamp(16px,1.5vw,21px);color:#f1d494;padding:11px 24px;border-radius:999px;border:1px solid rgba(241,194,101,.65);background:linear-gradient(#4a2218,#2b120d);cursor:pointer;box-shadow:0 0 24px rgba(222,151,64,.12)}
+.entry-button:disabled{opacity:.58;cursor:wait}
+.entry-button:hover:not(:disabled),.entry-button:focus-visible:not(:disabled){filter:brightness(1.1);outline:1px solid rgba(240,204,137,.52);outline-offset:4px}
 @media(max-width:680px){.continue{bottom:17px;min-width:210px;padding:10px 20px;font-size:15px}.progress{height:2px}.restart{font-size:12px;padding:7px 11px}}
 @media(prefers-reduced-motion:reduce){.stage,.curtain,.continue,.progress i,.loading,.restart{transition-duration:.01ms!important}.loading span::after{animation:none}}
 .loading{display:none!important}
@@ -51,6 +58,12 @@ body{font-family:Georgia,"Times New Roman",serif}
   <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
   <div class="loading" id="loading" aria-hidden="true"></div>
   <div class="error" id="error">Не удалось открыть сцену. Пожалуйста, перезагрузите открытку.</div>
+  <div class="entry" id="entryGate">
+    <div class="entry-card">
+      <div class="entry-title">Добро пожаловать в историю</div>
+      <button class="entry-button" id="entryButton" type="button" disabled>Войти в историю</button>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -64,6 +77,8 @@ const restartBtn=document.getElementById('restartBtn');
 const progressBar=document.getElementById('progressBar');
 const loading=document.getElementById('loading');
 const errorBox=document.getElementById('error');
+const entryGate=document.getElementById('entryGate');
+const entryButton=document.getElementById('entryButton');
 let current=0;
 let sceneReady=false;
 let activeUrl='';
@@ -129,6 +144,10 @@ async function loadScene(index,{withCurtain=true}={}){
       stage.classList.remove('changing');
       changing=false;
       sceneReady=true;
+      if(index===0){
+        entryGate.classList.remove('hidden');
+        entryButton.disabled=false;
+      }
       if(previousUrl) URL.revokeObjectURL(previousUrl);
     };
     stage.src=url;
@@ -152,6 +171,22 @@ window.addEventListener('message',event=>{
 });
 continueBtn.addEventListener('click',()=>loadScene(current+1));
 restartBtn.addEventListener('click',()=>loadScene(0));
+entryButton.addEventListener('click',()=>{
+  if(!sceneReady||current!==0) return;
+  const root=document.documentElement;
+  const request=root.requestFullscreen||root.webkitRequestFullscreen;
+  if(request&&!document.fullscreenElement&&!document.webkitFullscreenElement){
+    try{
+      const result=request.call(root);
+      if(result&&result.catch) result.catch(()=>{});
+    }catch(error){}
+  }
+  try{
+    const innerButton=stage.contentDocument&&stage.contentDocument.getElementById('startBtn');
+    if(innerButton) innerButton.click();
+  }catch(error){}
+  entryGate.classList.add('hidden');
+});
 window.addEventListener('beforeunload',()=>{stopCurrentScene();if(activeUrl)URL.revokeObjectURL(activeUrl)});
 window.addEventListener('resize',fitStage,{passive:true});
 window.addEventListener('orientationchange',()=>setTimeout(fitStage,180),{passive:true});
