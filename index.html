@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="olga-build" content="compact-navigation-radio-ducking-v9-2026-08-14">
+<meta name="olga-build" content="quiz-edge-cleanup-v10-2026-08-19">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -260,6 +260,13 @@ function addSceneLayoutFixes(html,index){
     `,
     /* Результат викторины: финальная кнопка всегда остаётся в кадре. */
     5:`
+      /* В исходных фонах викторины крайний правый столбец светлый.
+         Чуть расширяем фон за пределы кадра, чтобы полоса не попадала в сцену. */
+      .frame{overflow:hidden!important}
+      .bg{
+        left:-5px!important;right:auto!important;width:calc(100% + 10px)!important;
+        max-width:none!important;
+      }
       .final-card{
         top:4.5%!important;width:52vw!important;max-width:760px!important;
       }
