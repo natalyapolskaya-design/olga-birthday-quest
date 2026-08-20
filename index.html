@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="olga-build" content="quiz-edge-cleanup-v10-2026-08-19">
+<meta name="olga-build" content="final-v11-2026-08-20">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -100,6 +100,7 @@ body{font-family:Georgia,"Times New Roman",serif}
 
 <script>
 const sceneFiles=["scene-01.html","scene-02.html","scene-03.html","scene-04.html","scene-05.html","scene-06.html","scene-07.html","scene-08.html"];
+const sceneBuild="final-v11-2026-08-20";
 const sceneRatios=[3/2,3/2,16/9,3/2,3/2,16/9,16/9,16/9];
 const stage=document.getElementById('stage');
 const card=document.querySelector('.card');
@@ -262,10 +263,14 @@ function addSceneLayoutFixes(html,index){
     5:`
       /* В исходных фонах викторины крайний правый столбец светлый.
          Чуть расширяем фон за пределы кадра, чтобы полоса не попадала в сцену. */
-      .frame{overflow:hidden!important}
+      html,body,.scene,.frame{
+        overflow:hidden!important;background:#080402!important;
+        border:0!important;outline:0!important;box-shadow:none!important;
+      }
       .bg{
-        left:-5px!important;right:auto!important;width:calc(100% + 10px)!important;
-        max-width:none!important;
+        left:-7px!important;right:auto!important;top:-4px!important;bottom:auto!important;
+        width:calc(100% + 14px)!important;height:calc(100% + 8px)!important;
+        max-width:none!important;border:0!important;outline:0!important;
       }
       .final-card{
         top:4.5%!important;width:52vw!important;max-width:760px!important;
@@ -330,7 +335,7 @@ function addSceneAudioFixes(html,index){
     Поэтому топот и отчётливое ржание сведены в один готовый трек,
     который запускается непосредственно первым касанием пользователя.
   */
-  const arrivalUrl=new URL('horse-arrival-complete.mp3?olga=v8',location.href).href;
+  const arrivalUrl=new URL('horse-arrival-complete.mp3?olga=final-v11',location.href).href;
   const oldWhinny="setTimeout(async()=>{try{snort.currentTime=0;snort.volume=.72;await snort.play();setTimeout(()=>fadeOut(snort,1300),3400)}catch(e){console.warn('Snort audio:',e)}},12100);";
   return html
     .replace(
@@ -354,7 +359,8 @@ function stopCurrentScene(){
 }
 async function getSceneSource(index){
   if(!sceneSourceCache.has(index)){
-    const request=fetch(sceneFiles[index],{cache:'force-cache'}).then(response=>{
+    const sceneUrl=`${sceneFiles[index]}?olga=${encodeURIComponent(sceneBuild)}`;
+    const request=fetch(sceneUrl,{cache:'force-cache'}).then(response=>{
       if(!response.ok) throw new Error(`Scene load failed: ${response.status}`);
       return response.text();
     });
